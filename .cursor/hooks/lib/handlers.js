@@ -12,6 +12,9 @@ import {
 } from "./utils.js";
 import { addCompletionScores, addTagsToTrace } from "./langfuse-client.js";
 
+/**
+ * 处理 beforeSubmitPrompt 事件 该事件在用户提交提示词后触发
+ */
 export function handleBeforeSubmitPrompt(trace, input) {
   trace.update({
     name: input.prompt?.substring(0, 100) || "User Prompt",
@@ -51,6 +54,9 @@ export function handleBeforeSubmitPrompt(trace, input) {
   return { continue: true };
 }
 
+/**
+ * 处理 afterAgentResponse 事件 该事件在 Agent 响应后触发
+ */
 export function handleAfterAgentResponse(trace, input) {
   const responseLength = input.text?.length || 0;
   const lineCount = input.text?.split("\n").length || 0;
@@ -71,6 +77,9 @@ export function handleAfterAgentResponse(trace, input) {
   return null;
 }
 
+/**
+ * 处理 afterAgentThought 事件 该事件在 Agent 思考后触发
+ */
 export function handleAfterAgentThought(trace, input) {
   trace
     .span({
@@ -90,6 +99,9 @@ export function handleAfterAgentThought(trace, input) {
   return null;
 }
 
+/**
+ * 处理 beforeShellExecution 事件 该事件在 Shell 执行前触发
+ */
 export function handleBeforeShellExecution(trace, input) {
   trace
     .span({
@@ -106,6 +118,9 @@ export function handleBeforeShellExecution(trace, input) {
   return { permission: "allow" };
 }
 
+/**
+ * 处理 afterShellExecution 事件 该事件在 Shell 执行后触发
+ */
 export function handleAfterShellExecution(trace, input) {
   const outputLower = (input.output || "").toLowerCase();
   const mightHaveFailed =
@@ -132,6 +147,9 @@ export function handleAfterShellExecution(trace, input) {
   return null;
 }
 
+/**
+ * 处理 beforeMCPExecution 事件 该事件在 MCP 执行前触发
+ */
 export function handleBeforeMCPExecution(trace, input) {
   trace
     .span({
@@ -150,6 +168,9 @@ export function handleBeforeMCPExecution(trace, input) {
   return { permission: "allow" };
 }
 
+/**
+ * 处理 afterMCPExecution 事件 该事件在 MCP 执行后触发
+ */
 export function handleAfterMCPExecution(trace, input) {
   let resultSize = 0;
   try {
@@ -175,6 +196,9 @@ export function handleAfterMCPExecution(trace, input) {
   return null;
 }
 
+/**
+ * 处理 beforeReadFile 事件 该事件在读取文件前触发
+ */
 export function handleBeforeReadFile(trace, input) {
   const extension = getFileExtension(input.file_path);
 
@@ -190,6 +214,9 @@ export function handleBeforeReadFile(trace, input) {
   return { permission: "allow" };
 }
 
+/**
+ * 处理 afterFileEdit 事件 该事件在编辑文件后触发
+ */
 export function handleAfterFileEdit(trace, input) {
   const extension = getFileExtension(input.file_path);
   const editStats = calculateEditStats(input.edits);
@@ -213,6 +240,9 @@ export function handleAfterFileEdit(trace, input) {
   return null;
 }
 
+/**
+ * 处理 stop 事件 该事件在 Agent 停止后触发
+ */
 export function handleStop(trace, input) {
   const level = determineLevel(input.status);
 
@@ -232,6 +262,9 @@ export function handleStop(trace, input) {
   return {};
 }
 
+/**
+ * 处理 beforeTabFileRead 事件 该事件在读取 Tab 文件前触发
+ */
 export function handleBeforeTabFileRead(trace, input) {
   const extension = getFileExtension(input.file_path);
   const fileName = input.file_path?.split("/").pop() || "file";
@@ -247,6 +280,10 @@ export function handleBeforeTabFileRead(trace, input) {
   return { permission: "allow" };
 }
 
+
+/**
+ * 处理 afterTabFileEdit 事件 该事件在编辑 Tab 文件后触发
+ */
 export function handleAfterTabFileEdit(trace, input) {
   const extension = getFileExtension(input.file_path);
   const editStats = calculateEditStats(input.edits);
@@ -269,13 +306,20 @@ export function handleAfterTabFileEdit(trace, input) {
         file_extension: extension,
         source: "tab",
         ...editStats,
-      },
+      }
     })
     .end();
 
   return null;
 }
 
+/**
+ * 路由 Hook 处理器
+ * @param {string} hookName - Hook 名称
+ * @param {LangfuseTrace} trace - Langfuse trace 实例
+ * @param {object} input - 输入数据
+ * @returns {object} 响应对象
+ */
 export function routeHookHandler(hookName, trace, input) {
   const handlers = {
     beforeSubmitPrompt: handleBeforeSubmitPrompt,

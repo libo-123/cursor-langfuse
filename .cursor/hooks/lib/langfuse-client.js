@@ -27,6 +27,10 @@ export const HOOK_HANDLER_VERSION = "1.2.0";
 
 let langfuseInstance = null;
 
+/**
+ * 获取 Langfuse 客户端实例
+ * @returns {Langfuse} Langfuse 客户端实例
+ */
 export function getLangfuseClient() {
   if (!langfuseInstance) {
     langfuseInstance = new Langfuse({
@@ -39,13 +43,19 @@ export function getLangfuseClient() {
   return langfuseInstance;
 }
 
+/**
+ * 获取或创建 Langfuse trace
+ * @param {object} input - 输入数据
+ * @param {string} customName - 自定义 trace 名称
+ * @returns {LangfuseTrace} Langfuse trace 实例
+ */
 export function getOrCreateTrace(input, customName = null) {
   const langfuse = getLangfuseClient();
   const sessionId = generateSessionId(input.workspace_roots);
   const traceName =
     customName ||
     generateTraceName(input.prompt, input.model) ||
-    `${input.hook_event_name || "Cursor"} - ${input.model || "Agent"}`;
+    `${input.hook_event_name || "未知"} - ${input.model || "Agent"}`;
   const tags = generateTags(input.hook_event_name, input);
 
   return langfuse.trace({
@@ -65,6 +75,11 @@ export function getOrCreateTrace(input, customName = null) {
   });
 }
 
+/**
+ * 添加标签到 Langfuse trace
+ * @param {LangfuseTrace} trace - Langfuse trace 实例
+ * @param {string[]} newTags - 新的标签数组
+ */
 export function addTagsToTrace(trace, newTags) {
   if (trace && newTags && newTags.length > 0) {
     trace.update({ tags: newTags });
