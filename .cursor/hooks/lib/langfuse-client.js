@@ -70,6 +70,7 @@ export function getOrCreateTrace(input, customName = null) {
       model: input.model,
       workspace_roots: input.workspace_roots,
       generation_id: input.generation_id,
+      transcript_path: input.transcript_path,
     },
     tags: tags,
   });

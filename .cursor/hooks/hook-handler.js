@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import { appendFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
 /**
  * Cursor Hooks 与 Langfuse 集成
  * 
@@ -27,6 +30,15 @@ import {
 import { routeHookHandler } from './lib/handlers.js';
 
 /**
+ * 将输入数据追加写入项目根目录的 JSONL 文件
+ */
+async function appendInputToJsonl(input) {
+  const outputPath = resolve(process.cwd(), 'hook-inputs.jsonl');
+  const line = `${JSON.stringify(input)}\n`;
+  await appendFile(outputPath, line, 'utf8');
+}
+
+/**
  * 主处理函数
  * 从 stdin 读取 hook 数据，创建 Langfuse trace，并路由到对应的处理器
  */
@@ -34,6 +46,8 @@ async function main() {
   try {
     // 从 stdin 读取 JSON 输入
     const input = await readStdin();
+
+    // await appendInputToJsonl(input);
 
     // 获取或创建该会话对应的 trace
     const trace = getOrCreateTrace(input);
