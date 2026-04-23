@@ -1,11 +1,11 @@
 /**
- * Utility functions for Cursor Langfuse hooks
+ * Cursor Langfuse Hook 的工具函数
  */
 
 /**
- * Read and parse JSON input from stdin
- * Cursor hooks pass data via stdin as JSON
- * @returns {Promise<object>} Parsed JSON object from stdin
+ * 从 stdin 读取并解析 JSON 输入
+ * Cursor Hook 会通过 stdin 以 JSON 格式传递数据
+ * @returns {Promise<object>} 从 stdin 解析得到的 JSON 对象
  */
 export async function readStdin() {
   return new Promise((resolve, reject) => {
@@ -26,17 +26,17 @@ export async function readStdin() {
 }
 
 /**
- * Generate a descriptive trace name from the prompt
- * @param {string} prompt - The user's prompt text
- * @param {string} model - The model being used
- * @returns {string} A descriptive trace name
+ * 根据提示词生成有描述性的 trace 名称
+ * @param {string} prompt - 用户输入的提示词文本
+ * @param {string} model - 当前使用的模型
+ * @returns {string} 有描述性的 trace 名称
  */
 export function generateTraceName(prompt, model) {
   if (!prompt) {
     return `Cursor ${model || 'Agent'}`;
   }
   
-  // Extract first meaningful words from the prompt (max 50 chars)
+  // 提取提示词中前几个有意义的词语（最多 50 个字符）
   const cleaned = prompt
     .replace(/\n/g, ' ')
     .replace(/\s+/g, ' ')
@@ -47,7 +47,7 @@ export function generateTraceName(prompt, model) {
     return cleaned;
   }
   
-  // Try to cut at a word boundary
+  // 尽量在单词边界处截断
   const truncated = cleaned.substring(0, maxLength);
   const lastSpace = truncated.lastIndexOf(' ');
   
@@ -59,18 +59,18 @@ export function generateTraceName(prompt, model) {
 }
 
 /**
- * Generate a session ID from workspace roots
- * Groups all conversations in the same workspace together
- * @param {string[]} workspaceRoots - Array of workspace root paths
- * @returns {string} Session ID
+ * 根据工作区根路径生成会话 ID
+ * 将同一工作区中的所有对话归为一组
+ * @param {string[]} workspaceRoots - 工作区根路径数组
+ * @returns {string} 会话 ID
  */
 export function generateSessionId(workspaceRoots) {
   if (!workspaceRoots || workspaceRoots.length === 0) {
     return 'cursor-default-session';
   }
   
-  // Use the first workspace root as the session identifier
-  // Extract just the folder name for cleaner session names
+  // 使用第一个工作区根路径作为会话标识
+  // 仅提取文件夹名称，让会话名更简洁
   const root = workspaceRoots[0];
   const folderName = root.split('/').pop() || root;
   
@@ -78,28 +78,28 @@ export function generateSessionId(workspaceRoots) {
 }
 
 /**
- * Generate dynamic tags based on hook activity
- * @param {string} hookName - The name of the hook being executed
- * @param {object} input - The input data from the hook
- * @param {Set<string>} existingTags - Set of existing tags to add to
- * @returns {string[]} Array of tags
+ * 根据 Hook 活动动态生成标签
+ * @param {string} hookName - 当前执行的 Hook 名称
+ * @param {object} input - Hook 的输入数据
+ * @param {Set<string>} existingTags - 需要追加标签的已有标签集合
+ * @returns {string[]} 标签数组
  */
 export function generateTags(hookName, input, existingTags = new Set()) {
   const tags = new Set(existingTags);
   
-  // Always add cursor tag
+  // 始终添加 cursor 标签
   tags.add('cursor');
   
-  // Add agent or tab tag based on hook type
+  // 根据 Hook 类型添加 agent 或 tab 标签
   if (hookName.includes('Tab')) {
     tags.add('tab');
   } else {
     tags.add('agent');
   }
   
-  // Add model-specific tag
+  // 添加模型相关标签
   if (input.model) {
-    // Normalize model name to a tag-friendly format
+    // 将模型名称规范化为适合作为标签的格式
     const modelTag = input.model
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '-')
@@ -108,7 +108,7 @@ export function generateTags(hookName, input, existingTags = new Set()) {
     tags.add(modelTag);
   }
   
-  // Add hook-type specific tags
+  // 添加 Hook 类型专属标签
   switch (hookName) {
     case 'beforeShellExecution':
     case 'afterShellExecution':
@@ -136,10 +136,10 @@ export function generateTags(hookName, input, existingTags = new Set()) {
 }
 
 /**
- * Determine the observation level based on status or context
- * @param {string} status - The status (e.g., 'completed', 'error', 'aborted')
- * @param {boolean} isBlocked - Whether the operation was blocked
- * @returns {string} Level: 'DEBUG' | 'DEFAULT' | 'WARNING' | 'ERROR'
+ * 根据状态或上下文判断观测级别
+ * @param {string} status - 状态值（例如 'completed'、'error'、'aborted'）
+ * @param {boolean} isBlocked - 操作是否被阻止
+ * @returns {string} 级别：'DEBUG' | 'DEFAULT' | 'WARNING' | 'ERROR'
  */
 export function determineLevel(status, isBlocked = false) {
   if (isBlocked) {
@@ -158,9 +158,9 @@ export function determineLevel(status, isBlocked = false) {
 }
 
 /**
- * Calculate edit statistics from an array of edits
- * @param {Array<{old_string: string, new_string: string}>} edits - Array of edits
- * @returns {object} Edit statistics
+ * 根据编辑数组计算编辑统计信息
+ * @param {Array<{old_string: string, new_string: string}>} edits - 编辑数组
+ * @returns {object} 编辑统计信息
  */
 export function calculateEditStats(edits) {
   if (!edits || !Array.isArray(edits)) {
@@ -190,9 +190,9 @@ export function calculateEditStats(edits) {
 }
 
 /**
- * Extract file extension from a file path
- * @param {string} filePath - The file path
- * @returns {string} The file extension (without dot) or 'unknown'
+ * 从文件路径中提取扩展名
+ * @param {string} filePath - 文件路径
+ * @returns {string} 文件扩展名（不含点），如果无法识别则返回 'unknown'
  */
 export function getFileExtension(filePath) {
   if (!filePath) return 'unknown';
@@ -204,9 +204,9 @@ export function getFileExtension(filePath) {
 }
 
 /**
- * Format duration in milliseconds to a human-readable string
- * @param {number} ms - Duration in milliseconds
- * @returns {string} Formatted duration
+ * 将毫秒时长格式化为便于阅读的字符串
+ * @param {number} ms - 毫秒单位的时长
+ * @returns {string} 格式化后的时长字符串
  */
 export function formatDuration(ms) {
   if (!ms || ms < 0) return '0ms';

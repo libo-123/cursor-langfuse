@@ -1,8 +1,8 @@
 /**
- * Langfuse Client Module
+ * Langfuse 客户端模块
  *
- * Handles Langfuse SDK initialization and trace management
- * with support for sessions, scoring, and dynamic metadata.
+ * 负责 Langfuse SDK 的初始化与 trace 管理，
+ * 同时支持会话、评分以及动态元数据。
  */
 
 import { Langfuse } from "langfuse";
@@ -14,11 +14,11 @@ import { generateTraceName, generateSessionId, generateTags } from "./utils.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load .env from project root (3 levels up from lib/)
+// 从项目根目录加载 .env（位于 lib/ 上三级）
 const projectRoot = resolve(__dirname, "..", "..", "..");
 config({ path: resolve(projectRoot, ".env") });
 
-// Fallback: try CWD if keys not found
+// 兜底方案：如果未找到密钥，则尝试使用当前工作目录
 if (!process.env.LANGFUSE_SECRET_KEY) {
   config({ path: resolve(process.cwd(), ".env") });
 }
@@ -107,7 +107,7 @@ export function addCompletionScores(trace, input) {
 
   addScore(trace, "completion_status", statusScore, statusComment);
 
-  // Efficiency score: fewer loops = higher score (10+ loops = 0)
+  // 效率分数：循环次数越少分数越高（10 次及以上为 0）
   if (typeof input.loop_count === "number") {
     const efficiencyScore = Math.max(0, 1 - input.loop_count / 10);
     addScore(

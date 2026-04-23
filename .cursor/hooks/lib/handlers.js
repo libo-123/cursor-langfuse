@@ -1,6 +1,6 @@
 /**
- * Hook Handlers Module
- * Contains handlers for all Cursor hook events.
+ * Hook 处理器模块
+ * 包含所有 Cursor Hook 事件的处理函数。
  */
 
 import {
