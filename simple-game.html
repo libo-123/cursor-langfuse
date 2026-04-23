@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Catch Game</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: Arial, sans-serif;
+        background: radial-gradient(circle at top, #263149, #111827 55%);
+        color: #e5e7eb;
+      }
+
+      .game-shell {
+        width: min(92vw, 460px);
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(17, 24, 39, 0.9);
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.25rem;
+        text-align: center;
+      }
+
+      .tips {
+        margin: 0 0 12px;
+        text-align: center;
+        font-size: 0.9rem;
+        color: #9ca3af;
+      }
+
+      .hud {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+      }
+
+      canvas {
+        width: 100%;
+        display: block;
+        border-radius: 10px;
+        border: 1px solid #374151;
+        background: linear-gradient(#0f172a, #111827);
+      }
+
+      .actions {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #374151;
+        background: #1f2937;
+        color: #e5e7eb;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      button:hover {
+        background: #2b3648;
+      }
+
+      .status {
+        margin-top: 10px;
+        min-height: 1.2em;
+        text-align: center;
+        color: #d1d5db;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="game-shell">
+      <h1>Catch Coins</h1>
+      <p class="tips">Move with Left/Right or A/D. Catch yellow, avoid red.</p>
+
+      <div class="hud">
+        <span id="score">Score: 0</span>
+        <span id="lives">Lives: 3</span>
+        <span id="level">Level: 1</span>
+      </div>
+
+      <canvas id="game" width="420" height="560"></canvas>
+
+      <div class="actions">
+        <button id="startBtn" type="button">Start</button>
+        <button id="restartBtn" type="button">Restart</button>
+      </div>
+      <p id="status" class="status">Press Start to play.</p>
+    </main>
+
+    <script>
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const livesEl = document.getElementById("lives");
+      const levelEl = document.getElementById("level");
+      const statusEl = document.getElementById("status");
+      const startBtn = document.getElementById("startBtn");
+      const restartBtn = document.getElementById("restartBtn");
+
+      const state = {
+        running: false,
+        score: 0,
+        lives: 3,
+        spawnTimer: 0,
+        spawnGap: 800,
+        level: 1,
+        timeMs: 0,
+        items: [],
+        keys: {
+          left: false,
+          right: false,
+        },
+      };
+
+      const player = {
+        x: canvas.width / 2 - 24,
+        y: canvas.height - 36,
+        w: 48,
+        h: 18,
+        speed: 280,
+      };
+
+      let previousTs = 0;
+
+      function resetGame() {
+        state.score = 0;
+        state.lives = 3;
+        state.spawnTimer = 0;
+        state.spawnGap = 800;
+        state.level = 1;
+        state.timeMs = 0;
+        state.items = [];
+        state.running = false;
+        player.x = canvas.width / 2 - player.w / 2;
+        updateHud();
+        statusEl.textContent = "Press Start to play.";
+        draw();
+      }
+
+      function updateHud() {
+        scoreEl.textContent = `Score: ${state.score}`;
+        livesEl.textContent = `Lives: ${state.lives}`;
+        levelEl.textContent = `Level: ${state.level}`;
+      }
+
+      function spawnItem() {
+        const isBomb = Math.random() < 0.28;
+        const size = isBomb ? 18 : 14;
+        const speedBase = isBomb ? 145 : 120;
+        const speed = speedBase + state.level * 18 + Math.random() * 30;
+        const x = Math.random() * (canvas.width - size);
+
+        state.items.push({
+          kind: isBomb ? "bomb" : "coin",
+          x,
+          y: -size,
+          size,
+          speed,
+        });
+      }
+
+      function rectOverlap(a, b) {
+        return (
+          a.x < b.x + b.w &&
+          a.x + a.w > b.x &&
+          a.y < b.y + b.h &&
+          a.y + a.h > b.y
+        );
+      }
+
+      function update(dt) {
+        state.timeMs += dt * 1000;
+        state.level = 1 + Math.floor(state.timeMs / 15000);
+        state.spawnGap = Math.max(250, 800 - (state.level - 1) * 70);
+
+        if (state.keys.left) {
+          player.x -= player.speed * dt;
+        }
+        if (state.keys.right) {
+          player.x += player.speed * dt;
+        }
+        player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
+
+        state.spawnTimer += dt * 1000;
+        if (state.spawnTimer >= state.spawnGap) {
+          state.spawnTimer = 0;
+          spawnItem();
+        }
+
+        const playerRect = { x: player.x, y: player.y, w: player.w, h: player.h };
+        const nextItems = [];
+
+        for (const item of state.items) {
+          item.y += item.speed * dt;
+
+          const itemRect = { x: item.x, y: item.y, w: item.size, h: item.size };
+          if (rectOverlap(playerRect, itemRect)) {
+            if (item.kind === "coin") {
+              state.score += 10;
+            } else {
+              state.lives -= 1;
+              if (state.lives <= 0) {
+                gameOver();
+                return;
+              }
+            }
+            continue;
+          }
+
+          if (item.y <= canvas.height + item.size) {
+            nextItems.push(item);
+          }
+        }
+
+        state.items = nextItems;
+        updateHud();
+      }
+
+      function drawPlayer() {
+        ctx.fillStyle = "#60a5fa";
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+        ctx.fillStyle = "#93c5fd";
+        ctx.fillRect(player.x + 8, player.y - 8, player.w - 16, 8);
+      }
+
+      function drawItems() {
+        for (const item of state.items) {
+          if (item.kind === "coin") {
+            ctx.fillStyle = "#facc15";
+            ctx.beginPath();
+            ctx.arc(
+              item.x + item.size / 2,
+              item.y + item.size / 2,
+              item.size / 2,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+          } else {
+            ctx.fillStyle = "#ef4444";
+            ctx.beginPath();
+            ctx.arc(
+              item.x + item.size / 2,
+              item.y + item.size / 2,
+              item.size / 2,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+            ctx.fillStyle = "#fee2e2";
+            ctx.fillRect(item.x + item.size / 2 - 1, item.y - 5, 2, 6);
+          }
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "rgba(255,255,255,0.05)";
+        for (let i = 0; i < 32; i += 1) {
+          ctx.fillRect((i * 73) % canvas.width, (i * 97) % canvas.height, 2, 2);
+        }
+
+        drawPlayer();
+        drawItems();
+      }
+
+      function loop(ts) {
+        if (!previousTs) previousTs = ts;
+        const dt = Math.min((ts - previousTs) / 1000, 0.033);
+        previousTs = ts;
+
+        if (state.running) {
+          update(dt);
+        }
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      function startGame() {
+        if (state.running) return;
+        state.running = true;
+        statusEl.textContent = "Game running...";
+      }
+
+      function gameOver() {
+        state.running = false;
+        statusEl.textContent = `Game over. Final score: ${state.score}.`;
+      }
+
+      function onKeyChange(e, pressed) {
+        if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
+          state.keys.left = pressed;
+          e.preventDefault();
+        }
+        if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
+          state.keys.right = pressed;
+          e.preventDefault();
+        }
+      }
+
+      window.addEventListener("keydown", (e) => onKeyChange(e, true));
+      window.addEventListener("keyup", (e) => onKeyChange(e, false));
+      startBtn.addEventListener("click", startGame);
+      restartBtn.addEventListener("click", resetGame);
+
+      resetGame();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
