@@ -17,7 +17,7 @@ import { resolve } from 'node:path';
  * - 丰富的元数据与编辑统计
  * 
  * @version 1.1.0
- * @see https://cursor.com/docs/agent/hooks
+ * @see https://cursor.com/cn/docs/hooks
  * @see https://langfuse.com/docs
  */
 
